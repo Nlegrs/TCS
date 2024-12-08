@@ -2,7 +2,7 @@ using Godot;
 using System;
 
 public partial class Main : Node3D
-{
+{//aejoiejgroierj
 	Transform3D t = Transform3D.Identity;
 	private int[] mNissu = {1,0,1,0,1,0,1,1,0,1,0,1};//それぞれの月の日の数−３０
 	private int URUUQTY2000 = 484; //2000年時てんのうるう年の数
