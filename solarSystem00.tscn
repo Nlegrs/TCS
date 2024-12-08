@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3 uid="uid://b725gsgvs8eur"]
+
+[ext_resource type="Script" path="res://Main.cs" id="1_hngdo"]
+[ext_resource type="Script" path="res://CelCon.cs" id="3_0wa1w"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_rqs5m"]
+radius = 100.0
+height = 1000.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_xu3xa"]
+radius = 100.0
+height = 200.0
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_hngdo")
+
+[node name="Earth" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4096, 0)
+mesh = SubResource("SphereMesh_rqs5m")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 382.152)
+far = 5000.0
+
+[node name="test" type="Node3D" parent="."]
+
+[node name="Sun" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 400, 0, 0)
+mesh = SubResource("SphereMesh_xu3xa")
+script = ExtResource("3_0wa1w")
