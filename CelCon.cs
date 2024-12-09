@@ -8,8 +8,7 @@ public partial class CelCon : MeshInstance3D
 		
 	}
 	
-	public override void _Process()
+	public override void _Process(double delta)
 	{
-		
 	}
 }
