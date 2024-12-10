@@ -3,16 +3,21 @@
 [ext_resource type="Script" path="res://Main.cs" id="1_hngdo"]
 [ext_resource type="Script" path="res://CelCon.cs" id="3_0wa1w"]
 
-[sub_resource type="SphereMesh" id="SphereMesh_rqs5m"]
-radius = 100.0
-height = 1000.0
-
 [sub_resource type="SphereMesh" id="SphereMesh_xu3xa"]
 radius = 100.0
 height = 200.0
 
+[sub_resource type="SphereMesh" id="SphereMesh_rqs5m"]
+radius = 100.0
+height = 1000.0
+
 [node name="Main" type="Node3D"]
 script = ExtResource("1_hngdo")
+
+[node name="Sun" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 400, 0, 0)
+mesh = SubResource("SphereMesh_xu3xa")
+script = ExtResource("3_0wa1w")
 
 [node name="Earth" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4096, 0)
@@ -24,7 +29,18 @@ far = 5000.0
 
 [node name="test" type="Node3D" parent="."]
 
-[node name="Sun" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 400, 0, 0)
-mesh = SubResource("SphereMesh_xu3xa")
-script = ExtResource("3_0wa1w")
+[node name="Mercury" type="MeshInstance3D" parent="."]
+
+[node name="Venus" type="MeshInstance3D" parent="."]
+
+[node name="Mars" type="MeshInstance3D" parent="."]
+
+[node name="Jupitor" type="MeshInstance3D" parent="."]
+
+[node name="Saturn" type="MeshInstance3D" parent="."]
+
+[node name="Neptune" type="MeshInstance3D" parent="."]
+
+[node name="Uranus" type="MeshInstance3D" parent="."]
+
+[node name="Pluto" type="MeshInstance3D" parent="."]
