@@ -113,6 +113,7 @@ public partial class Main
             if( 2*Math.PI <= M){
                 M -= 2*Math.PI;
             }
+            //                                                                                 Godot.GD.Print(toDeg(M));
             a = (float)(M / (1 - Main.CelE.o[ci].e));
             b = (float)(M + Main.CelE.o[ci].e);
             c = (float)((M + Math.PI * Main.CelE.o[ci].e)/(1 + Main.CelE.o[ci].e));
@@ -142,7 +143,7 @@ public partial class Main
             tmp = Math.Cos(E); 
             f = (tmp - Main.CelE.o[ci].e)/(1 - Main.CelE.o[ci].e * tmp);
             //E = 極座標のr  変数をつりたくなかった
-            E = Main.CelE.o[ci].l / (1 + Main.CelE.o[ci].e * f);
+            E = Main.CelE.o[ci].l / (1 - Main.CelE.o[ci].e * f);
             f = Math.Acos(f);
             //cosなので半分越えてたら反転
             if( M > Math.PI){
@@ -215,7 +216,7 @@ public partial class Main
                 som -= MathF.PI;
             }
             */
-            if(r0 > o.l){  // 正負がわかれば計算しなくていい
+            if(r0 < o.l){  // 正負がわかれば計算しなくていい
                 som -= MathF.PI;
             }
             
@@ -226,11 +227,9 @@ public partial class Main
             ///f=pi/2 , 3pi/2
 
             som = MathF.Atan2(-rr.X , rr.Y);
-            Godot.GD.Print(toDeg(som));
             if( Vector2.Dot(rr,vv) < 0 ){ //とおざかっているときは逆がわ
                 som += MathF.PI;
             }
-            Godot.GD.Print("aaaaaaaaaaaaaaaaaaaa");
         }
             o.s0 = som; //rad
         return o;

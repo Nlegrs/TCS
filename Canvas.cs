@@ -160,9 +160,14 @@ public partial class Canvas : Godot.ColorRect
         DrawLine(Main.Inputs.camDiff+pos, Main.Inputs.camDiff-pos , new Godot.Color(1,1,1));
 
         // draw orbits
+        float mouseSlope = (Main.Inputs.MMV.Y-del.Y-Main.canvas.GetGlobalPosition().Y)/(Main.Inputs.MMV.X-del.X-Main.canvas.GetGlobalPosition().X);
         for(int ci=0; ci<Main.maxCI; ci++){
             float l = (float)Main.CelE.o[ci].l * Main.Inputs.scale[1];
-            float r = l / (1 + (Main.CelE.o[ci].e));
+            float r = l / (1 - (Main.CelE.o[ci].e));
+            float sita;
+            float d = float.MaxValue;
+            float mSita = 0;
+
             Vector3 tmp = new Vector3(
                     r * MathF.Cos(Main.CelE.o[ci].s0),
                     r * MathF.Sin(Main.CelE.o[ci].s0),
@@ -175,11 +180,10 @@ public partial class Canvas : Godot.ColorRect
             pos1 = Main.paraPro(pos1.X, pos1.Y, tmp.Z, in s0, in s1, in c0, in c1);
             pos1.X += del.X; pos1.Y += del.Y + 10;
             Godot.Vector2 pos2;
-            float sita;
             for(int j=0; j<=Main.drawPoly; j++){
                 sita = 2 * MathF.PI * j/Main.drawPoly;
 
-                r = l / (1 + (Main.CelE.o[ci].e * MathF.Cos(sita)));
+                r = l / (1 - (Main.CelE.o[ci].e * MathF.Cos(sita)));
                 tmp = new Vector3(
                         r * MathF.Cos(sita + Main.CelE.o[ci].s0),
                         r * MathF.Sin(sita + Main.CelE.o[ci].s0),
@@ -192,11 +196,54 @@ public partial class Canvas : Godot.ColorRect
                 pos2 = pos2 + del;
                 DrawLine(pos1, pos2 , new Godot.Color(1,1,1));
                 pos1 = pos2;
+                if(Main.Inputs.Drag==ci+1){ //ドラックで時間変更
+                    float tan;
+                    if((Main.Inputs.MMV.X-del.X-Main.canvas.GetGlobalPosition().X)==0 && pos1.X-del.X!=0){
+                        tan = MathF.Abs(65536 - ((pos1.Y-del.Y)/(pos1.X-del.X)));
+                    }else{
+                        tan = MathF.Abs(mouseSlope - ((pos1.Y-del.Y)/(pos1.X-del.X)));
+                    }
+                    if((Main.Inputs.MMV.Y-del.Y-Main.canvas.GetGlobalPosition().Y)*(pos1.Y-del.Y)>0 && tan < d){
+                        
+                        d = tan;
+                        mSita = sita;
+                    }
+                }
+            }
+            if(Main.Inputs.Drag==ci+1){ //ドラックで時間変更
+                //Godot.GD.Print(mouseSlope );
+                //mSita += MathF.PI/2;
+                float M0 = mSita - Main.CelE.o[ci].e * MathF.Sin(mSita) ;
+                float M1 = (float)Main.VSHT / (float)Main.CelE.o[ci].period;
+                int p = (int)MathF.Truncate(M1);
+                M1 = M1 % 1; //小数部分o
+                M1 = M1 * 2 * MathF.PI; //平均近点角rad
+                /*
+                M1 += Main.CelE.o[ci].epo;
+                if( 2*MathF.PI <= M1){
+                    M1 -= 2*MathF.PI;
+                }
+                */
+                M0 -= Main.CelE.o[ci].epo;
+                if( M0 <= 0){
+                    M0 += 2*MathF.PI;
+                }
+                if(M1 - M0 >= MathF.PI){ //近点越え
+                    Godot.GD.Print("++++ ",Main.toDegF(M0)," ",Main.toDegF(M1));
+                    p++;
+                }else if(M0 - M1 >= MathF.PI){
+                    Godot.GD.Print("---- ",Main.toDegF(M0)," ",Main.toDegF(M1));
+                    p--;
+                }
+                Godot.GD.Print(Main.toDegF(M0)," ",Main.toDegF(M1)," ",(p+(M0)/(2*Math.PI)));
+                Main.VSHT = (double)(p + M0/(2*Math.PI)) * Main.CelE.o[ci].period;
             }
         }
+                    //Godot.GD.Print(((Main.Inputs.MMV.X-del.X), "  ",(Main.Inputs.MMV.Y-del.Y))," ",del);
+                    //Godot.GD.Print(Main.Inputs.MMV-del-Main.canvas.GetGlobalPosition()," ",del);
         for(int i=0; i<Main.orbits.Count; i++){
             float l = (float)Main.orbits[i].l * Main.Inputs.scale[1];
-            float r = l / (1 + (Main.orbits[i].e));
+            float r = l / (1 - (Main.orbits[i].e));
             Vector3 tmp = new Vector3(
                     r * MathF.Cos(Main.orbits[i].s0),
                     r * MathF.Sin(Main.orbits[i].s0),
@@ -212,7 +259,7 @@ public partial class Canvas : Godot.ColorRect
             float sita;
             for(int j=0; j<=Main.drawPoly; j++){
                 sita = 2 * MathF.PI * j/Main.drawPoly;
-                r = l / (1 + (Main.orbits[i].e * MathF.Cos(sita)));
+                r = l / (1 - (Main.orbits[i].e * MathF.Cos(sita)));
                 tmp = new Vector3(
                         r * MathF.Cos(sita + Main.orbits[i].s0),
                         r * MathF.Sin(sita + Main.orbits[i].s0),
