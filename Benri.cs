@@ -15,6 +15,8 @@ public partial class Main{
         result += $"aAcce: {Math.Round(Probe.aAcce.v.X , 4)} , {Math.Round(Probe.aAcce.v.Y , 4)} , {Math.Round(Probe.aAcce.v.Z , 4)} , {Math.Round(Probe.aAcce.s , 4)}\n";
         result += $"aVelo: {Math.Round(Probe.aVelo.v.X , 4)} , {Math.Round(Probe.aVelo.v.Y , 4)} , {Math.Round(Probe.aVelo.v.Z , 4)} , {Math.Round(Probe.aVelo.s , 4)}\n";
         result += $"angleQ:{Probe.anglQ.ToString()}\n";
+        result += $"solarE:{Probe.solarEnergy} W\n";
+        result += $"scale:{Inputs.scale[0]}\n";
 
         result += $"\nrate of t0 :{Probe.thruster[0].rate}\n";
         result += $"rate of t1 :{Probe.thruster[1].rate}\n";

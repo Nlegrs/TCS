@@ -94,6 +94,8 @@ public partial class Main : Godot.Node3D
         public static Quaternion anglQ;
         public static float scal;
         public static float[] reactWheel; //リアクションホイールの回転速度rad/s xyz
+        public static float solarEnergy; 
+        public static float solarConf; //真上から距離10^8kmで太陽光があたったときどれくらい発電するか
     }
 
 
@@ -278,6 +280,7 @@ public partial class Main : Godot.Node3D
             Probe.thruster[i].rate = 0;
         }            
         Probe.reactWheel = new float[3]{0,0,0};
+        Probe.solarConf = 100;
         //celEの初期化
         float[,] tmps = new float[2,10]{
             {0F,7.004F ,3.394F  ,0F      ,1.850F  ,1.307F  ,2.486F  ,0.774F  ,1.771F  ,17.150F },
@@ -323,17 +326,12 @@ public partial class Main : Godot.Node3D
         calOrbiterPosition(3 , RSHT , false);
         Probe.acce = new double[3]{0, 0, 0};
         Probe.acce2 = new double[3]{0, 0, 0};
-        Probe.velo = new double[3]{0, 30, 0};
+        Probe.velo = new double[3]{0, 0, 0};
         Probe.aAcce = new Rotate(1,0,0,0);
         Probe.aVelo = new Rotate(1,0,0,0);
         Probe.aVeloQ = new Quaternion(0,0,0,1);
         Probe.anglQ = new Quaternion(0,0,0,1);
         
-        positions[0,0] = positions[3,0];
-        positions[0,1] = positions[3,1];//静止軌道 高度+地球の半径
-        positions[0,2] = positions[3,2] + 100000;;
-        Probe.velo[0] = -positions[3,1] * 33 / 1496000000;
-        Probe.velo[1] = positions[3,0] * 33 / 1496000000;
         Inputs.scale[0] = 1;
 
 
@@ -343,11 +341,16 @@ public partial class Main : Godot.Node3D
         //debugよう
         ButtonClicked(-1);
 
-        CelE.o[1].s0 = 0;
-        CelE.o[1].s1 = 0;
-        CelE.o[1].s2 = 0;
-        CelE.o[1].c1 = 1;
-        CelE.o[1].c2 = 1;
+        positions[0,0] = positions[3,0];
+        positions[0,1] = positions[3,1];//静止軌道 高度+地球の半径
+        positions[0,2] = positions[3,2] + 100000;;
+        Probe.velo[0] = -positions[3,1] * 35 / 1496000000;
+        Probe.velo[1] = positions[3,0] * 35 / 1496000000;
+        //CelE.o[7].s0 = toRad(127.79317);
+        //CelE.o[7].s1 = MathF.Sin(toRad(175.1122384968547));
+        //CelE.o[7].s2 = MathF.Sin(toRad(322.27219));
+        //CelE.o[7].c1 = MathF.Cos(toRad(175.1122384968547));
+        //CelE.o[7].c2 = MathF.Cos(toRad(322.27219));
         
         //double AU = 149597870;
         /*
@@ -627,7 +630,7 @@ public partial class Main : Godot.Node3D
                             inputToTs(MODE[0]);
                             break;
                         case Godot.Key.R:
-                            if(MODE[0] <= 0){
+                            if(MODE[0] <= 1){
                                 tsDigiN[MODE[0]].Value = 4;
                             }
                             inputToTs(MODE[0]);
@@ -1018,7 +1021,14 @@ public partial class Main : Godot.Node3D
                 Probe.velo[2]  = 0;
                 //衝突中
             }
-            // }
+            if(ci==0){ //発電計算
+                d = d / 100000000;
+                Vector3 z = QVQ(Probe.anglQ, new Vector3(0,0,1));
+                Godot.GD.Print(z);
+                Vector3 p = new Vector3(-(float)positions[0,0]/100000000 , -(float)positions[0,1]/100000000 , -(float)positions[0,2]/100000000);
+                Probe.solarEnergy = Probe.solarConf * Vector3.Dot(p,z)/ MathF.Pow((float)d,3);
+                d = d*100000000;
+            }
             //表示上の天体の位置計算 {
             if( MODE[0] == 0 ){
                 diffPos[0] = diffPos[0] * Inputs.scale[0];
@@ -1076,9 +1086,13 @@ public partial class Main : Godot.Node3D
                 Probe.anglQ = System.Numerics.Quaternion.Lerp(Probe.anglQ , posContQ , 1/posContT);
                 //Quaternion a = System.Numerics.Quaternion.Concatenate( Probe.anglQ , System.Numerics.Quaternion.Conjugate(posContQ) );
                 //Probe.anglQ = QVQ(new Quaternion(a.X,a.Y,a.Z,a.W/posContT) , )
+                if(posContT<deltaT*ts[0]){
+                    Probe.anglQ =  posContQ;
+                }
                 posContT -= (float)(deltaT*ts[0]);
             }
         //}
+
 
 
         //速度計算{ v[i+1] = v[i] + (a[i]+a[i+1])Dt/2

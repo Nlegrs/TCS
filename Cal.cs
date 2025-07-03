@@ -131,7 +131,7 @@ public partial class Main
                         E = c;
                     }
                 }
-            for(int i=0; i<4; i++){
+            for(int i=0; i<4; i++){ //ニュートン法 M = E - eSinEを解く
                 tmp = E - Main.CelE.o[ci].e * Math.Sin(E) -M;//分母
                 tmp = tmp /( 1 - Main.CelE.o[ci].e * Math.Cos(E));//分子
                 if((float)tmp == 0F){
@@ -141,9 +141,9 @@ public partial class Main
                 E -= tmp;//
             } 
             tmp = Math.Cos(E); 
-            f = (tmp - Main.CelE.o[ci].e)/(1 - Main.CelE.o[ci].e * tmp);
+            f = (tmp + Main.CelE.o[ci].e)/(1 + Main.CelE.o[ci].e * tmp);
             //E = 極座標のr  変数をつりたくなかった
-            E = Main.CelE.o[ci].l / (1 - Main.CelE.o[ci].e * f);
+            E = Main.CelE.o[ci].l / (1 + Main.CelE.o[ci].e * f);
             f = Math.Acos(f);
             //cosなので半分越えてたら反転
             if( M > Math.PI){
