@@ -32,6 +32,9 @@ public partial class Canvas : Godot.ColorRect
 
     }
 
+public static Godot.Vector2 del = new Godot.Vector2();
+public static Godot.Vector2 del2 = new Godot.Vector2();
+
     public override void _Draw()
     {
         /*
@@ -87,11 +90,7 @@ public partial class Canvas : Godot.ColorRect
         float s1 = MathF.Sin(Main.camAngl[1, 1]);
         float c1 = MathF.Cos(Main.camAngl[1, 1]);
         Godot.Vector2 pos;
-        Godot.Vector2 del = new Godot.Vector2();
-
-
-
-
+        Godot.Color col = new Godot.Color(1,1,1);
 
         // add points and orbits  0:probe 1:sun 2:mercury 3:...
         Main.points.Clear();
@@ -112,31 +111,47 @@ public partial class Canvas : Godot.ColorRect
                     (float)Main.vpositions[ci, 1] * Main.Inputs.scale[1],
                     (float)Main.vpositions[ci, 2] * Main.Inputs.scale[1],
                     in s0,in s1,in c0,in c1);
-            pos = pos + del;
             Main.points.Add(pos);
         }
         Main.orbits.Clear();
+        Vector3 rP,rV;
+        if(Main.gravCenter==0){
+            rP = new Vector3((float)Main.positions[0,0],(float)Main.positions[0,1],(float)Main.positions[0,2]);
+            rV = new Vector3((float)Main.Probe.velo[0],(float)Main.Probe.velo[1],(float)Main.Probe.velo[2]);
+        }else{
+            rP = new Vector3(
+                                (float)(Main.positions[0,0]-Main.positions[Main.gravCenter,0]),
+                                (float)(Main.positions[0,1]-Main.positions[Main.gravCenter,1]),
+                                (float)(Main.positions[0,2]-Main.positions[Main.gravCenter,2]));
+            rV = new Vector3(
+                                (float)(Main.Probe.velo[0])-Main.CelE.v[Main.gravCenter+1].X,
+                                (float)(Main.Probe.velo[1])-Main.CelE.v[Main.gravCenter+1].Y,
+                                (float)(Main.Probe.velo[2])-Main.CelE.v[Main.gravCenter+1].Z);
+        }
+        Godot.GD.Print(rV.Length());
         Main.orbits.Add(Main.solveOrbit(
-                    new Vector3((float)Main.Probe.velo[0],(float)Main.Probe.velo[1],(float)Main.Probe.velo[2]) , 
-                    0, 
-                    new Vector3((float)Main.positions[0,0],(float)Main.positions[0,1],(float)Main.positions[0,2]),
-                    Math.Sqrt(Math.Pow(Main.Probe.velo[0],2)+Math.Pow(Main.Probe.velo[1],2)+Math.Pow(Main.Probe.velo[2],2)),
-                    Math.Sqrt(Math.Pow(Main.positions[0,0],2)+Math.Pow(Main.positions[0,1],2)+Math.Pow(Main.positions[0,2],2))));
-        Main.orbits.Add(new Main.Orbit(100,6.1515F,1496419216,156.021F,173.008F,0,0,1,1, 0));
-        Main.orbits[1].s0 = Main.toRadF(127.79317F);
-        Main.orbits[1].s1 = MathF.Sin(Main.toRadF(175.11223F));
-        Main.orbits[1].s2 = MathF.Sin(Main.toRadF(322.27219F));
-        Main.orbits[1].c1 = MathF.Cos(Main.toRadF(175.11223F));
-        Main.orbits[1].c2 = MathF.Cos(Main.toRadF(322.27219F));
+                    in rV, 
+                    in Main.gravCenter, 
+                    in rP,
+                    rV.Length(),
+                    rP.Length()));
+        //Main.orbits.Add(new Main.Orbit(100,6.1515F,1496419216,156.021F,173.008F,0,0,1,1, 0));
+        //Main.orbits[1].s0 = Main.toRadF(127.79317F);
+        //Main.orbits[1].s1 = MathF.Sin(Main.toRadF(175.11223F));
+        //Main.orbits[1].s2 = MathF.Sin(Main.toRadF(322.27219F));
+        //Main.orbits[1].c1 = MathF.Cos(Main.toRadF(175.11223F));
+        //Main.orbits[1].c2 = MathF.Cos(Main.toRadF(322.27219F));
 
         //del調整
-        del = Main.Inputs.camDiff - Main.points[Main.viewCenter]; //delは太陽の画面上の位置
+        del2 = Main.canvas.Size/2 + Main.Inputs.scale[1]*1000000*(Main.Inputs.camDiff-Main.canvas.Size/2);
+        del = del2 - Main.points[Main.viewCenter]; //delは中心星の画面上の位置
+
+        //Main.Inputs.scale[1]*1000000*(Main.Inputs.camDiff-Main.canvas.Size/2)
 
         //draw grid and axis
         float a = 15; //やじるしのながさ
         float b = 6; //やじるしのはばの半分
         for(int i=0; i<3; i++){
-            Godot.Color col;
             if(i==0){
                 pos = Main.paraPro(1000,0,0,in s0,in s1,in c0,in c1);
                 col = new Godot.Color(1,0,0);
@@ -147,26 +162,27 @@ public partial class Canvas : Godot.ColorRect
                 pos = Main.paraPro(0,0,1000,in s0,in s1,in c0,in c1);
                 col = new Godot.Color(0,0,1);
             }
-            float k1 = calMax(Main.Inputs.camDiff.X,Main.Inputs.camDiff.Y,pos.X,pos.Y);
-            float k2 = calMax(Main.Inputs.camDiff.X,Main.Inputs.camDiff.Y,-pos.X,-pos.Y);
-            DrawLine(pos*k1 + Main.Inputs.camDiff, -pos*k2 + Main.Inputs.camDiff , col);
+            float k1 = calMax(del2.X,del2.Y,pos.X,pos.Y);
+            float k2 = calMax(del2.X,del2.Y,-pos.X,-pos.Y);
+            DrawLine(pos*k1 + del2, -pos*k2 + del2 , col);
             float len = pos.Length();
             Godot.Vector2[] arrow = new Godot.Vector2[]{
-                new Godot.Vector2(pos.X*k1 + Main.Inputs.camDiff.X , pos.Y*k1 + Main.Inputs.camDiff.Y),
-                new Godot.Vector2(pos.X*(k1 - a/len) - pos.Y*b/len + Main.Inputs.camDiff.X  ,  pos.Y*(k1 - a/len) + pos.X*b/len + Main.Inputs.camDiff.Y),
-                new Godot.Vector2(pos.X*(k1 - a/len) + pos.Y*b/len + Main.Inputs.camDiff.X  ,  pos.Y*(k1 - a/len) - pos.X*b/len + Main.Inputs.camDiff.Y)
+                new Godot.Vector2(pos.X*k1 + del2.X , pos.Y*k1 + del2.Y),
+                new Godot.Vector2(pos.X*(k1 - a/len) - pos.Y*b/len + del2.X  ,  pos.Y*(k1 - a/len) + pos.X*b/len + del2.Y),
+                new Godot.Vector2(pos.X*(k1 - a/len) + pos.Y*b/len + del2.X  ,  pos.Y*(k1 - a/len) - pos.X*b/len + del2.Y)
             };
             DrawPolygon( arrow , new Godot.Color[]{col});
         }
 
         //draw other option
         pos = new Godot.Vector2(8,8);
-        DrawLine(Main.Inputs.camDiff+pos, Main.Inputs.camDiff-pos , new Godot.Color(1,1,1));
+        DrawLine(del2+pos, del2-pos , new Godot.Color(1,1,1));
         pos = new Godot.Vector2(-8,8);
-        DrawLine(Main.Inputs.camDiff+pos, Main.Inputs.camDiff-pos , new Godot.Color(1,1,1));
+        DrawLine(del2+pos, del2-pos , new Godot.Color(1,1,1));
 
         // draw orbits
         float mouseSlope = (Main.Inputs.MMV.Y-del.Y-Main.canvas.GetGlobalPosition().Y)/(Main.Inputs.MMV.X-del.X-Main.canvas.GetGlobalPosition().X);
+        col = new Godot.Color(1,1,1);
         for(int ci=0; ci<Main.maxCI; ci++){
             float l = (float)Main.CelE.o[ci].l * Main.Inputs.scale[1];
             float r = l / (1 + (Main.CelE.o[ci].e));
@@ -187,7 +203,14 @@ public partial class Canvas : Godot.ColorRect
             pos1.X += del.X; pos1.Y += del.Y + 10;
             Godot.Vector2 pos2;
             for(int j=0; j<=Main.drawPoly; j++){
-                sita = 2 * MathF.PI * j/Main.drawPoly;
+                sita = 2 * MathF.PI * j / Main.drawPoly;
+                tmp.X = MathF.Cos(sita);
+                /*
+                if(tmp.X < 0.005){
+                    tmp.X = 0.005F;
+                }
+                */
+                sita = sita * (Main.CelE.o[ci].e*tmp.X+1);
 
                 r = l / (1 + (Main.CelE.o[ci].e * MathF.Cos(sita)));
                 tmp = new Vector3(
@@ -200,7 +223,7 @@ public partial class Canvas : Godot.ColorRect
                 tmp.Z = tmp.Y * Main.CelE.o[ci].s1;
                 pos2 = Main.paraPro(pos2.X, pos2.Y, tmp.Z, in s0, in s1, in c0, in c1);
                 pos2 = pos2 + del;
-                DrawLine(pos1, pos2 , new Godot.Color(1,1,1));
+                DrawLine(pos1, pos2 , col);
                 pos1 = pos2;
                 if(Main.Inputs.Drag==ci+1){ //ドラックで時間変更
                     float tan;
@@ -265,11 +288,14 @@ public partial class Canvas : Godot.ColorRect
             pos1.Y = (tmp.X * Main.orbits[i].s2) + (tmp.Y * Main.orbits[i].c1 * Main.orbits[i].c2);
             tmp.Z = tmp.Y * Main.orbits[i].s1;
             pos1 = Main.paraPro(pos1.X, pos1.Y, tmp.Z, in s0, in s1, in c0, in c1);
-            pos1.X += del.X; pos1.Y += del.Y + 10;
+            pos1.X += del.X+Main.points[Main.orbits[i].ci+1].X;
+            pos1.Y += del.Y + 10+Main.points[Main.orbits[i].ci+1].Y;
             Godot.Vector2 pos2;
             float sita;
             for(int j=0; j<=Main.drawPoly; j++){
                 sita = 2 * MathF.PI * j/Main.drawPoly;
+                if(Main.orbits[i].e < 1)
+                    sita = sita + Main.orbits[i].e*MathF.Sin(sita);
                 r = l / (1 + (Main.orbits[i].e * MathF.Cos(sita)));
                 tmp = new Vector3(
                         r * MathF.Cos(sita + Main.orbits[i].s0),
@@ -280,7 +306,7 @@ public partial class Canvas : Godot.ColorRect
                 pos2.Y = (tmp.X * Main.orbits[i].s2) + (tmp.Y * Main.orbits[i].c1 * Main.orbits[i].c2);
                 tmp.Z = tmp.Y * Main.orbits[i].s1;
                 pos2 = Main.paraPro(pos2.X, pos2.Y, tmp.Z, in s0, in s1, in c0, in c1);
-                pos2 += del;
+                pos2 += del+Main.points[Main.orbits[i].ci+1];
 
                 sita = 2 * MathF.PI * (j+1)/Main.drawPoly;
                 r = l / (1 + (Main.orbits[i].e * MathF.Cos(sita)));
@@ -291,7 +317,6 @@ public partial class Canvas : Godot.ColorRect
                     DrawLine(pos1, pos2 , new Godot.Color(1,1,1)); //発散させる線1
 
                     j = Main.drawPoly - j;
-
                     sita = 2 * MathF.PI * (j+1)/Main.drawPoly;
                     r = l / (1 + (Main.orbits[i].e * MathF.Cos(sita)));
                     tmp = new Vector3(
@@ -303,7 +328,7 @@ public partial class Canvas : Godot.ColorRect
                     pos1.Y = (tmp.X * Main.orbits[i].s2) + (tmp.Y * Main.orbits[i].c1 * Main.orbits[i].c2);
                     tmp.Z = tmp.Y * Main.orbits[i].s1;
                     pos1 = Main.paraPro(pos1.X, pos1.Y, tmp.Z, in s0, in s1, in c0, in c1);
-                    pos1 += del;
+                    pos1 += del+Main.points[Main.orbits[i].ci+1];
                     
                     j++;
 
@@ -318,7 +343,7 @@ public partial class Canvas : Godot.ColorRect
                     pos2.Y = (tmp.X * Main.orbits[i].s2) + (tmp.Y * Main.orbits[i].c1 * Main.orbits[i].c2);
                     tmp.Z = tmp.Y * Main.orbits[i].s1;
                     pos2 = Main.paraPro(pos2.X, pos2.Y, tmp.Z, in s0, in s1, in c0, in c1);
-                    pos2 += del;
+                    pos2 += del+Main.points[Main.orbits[i].ci+1];
                     pos1 = pos2 + calMax(pos2.X,pos2.Y,pos2.X - pos2.X,pos1.Y - pos2.Y) * (pos1 - pos2);
 
                 }else{
@@ -329,12 +354,15 @@ public partial class Canvas : Godot.ColorRect
         }
 
         //draw directions(vector)
+        Godot.Vector2 pos3;
         float transScale = Main.Probe.node.Transform.Basis.Z.Length()*0.06F;
-        Godot.Vector2 pos3 = Main.paraPro(Main.Probe.node.Transform.Basis.Z.X, Main.Probe.node.Transform.Basis.Z.Y, Main.Probe.node.Transform.Basis.Z.Z, in s0, in s1, in c0, in c1);
+        pos3 = Main.paraPro(Main.Probe.node.Transform.Basis.Z.X, Main.Probe.node.Transform.Basis.Z.Y, Main.Probe.node.Transform.Basis.Z.Z, in s0, in s1, in c0, in c1);
         DrawLine(Main.points[0]+del, Main.points[0] + del + pos3/transScale , new Godot.Color(1,1,1));
         float length = 2F;
         pos3 = Main.paraPro((float)Main.Probe.velo[0], (float)Main.Probe.velo[1], (float)Main.Probe.velo[2], in s0, in s1, in c0, in c1);
         DrawLine(Main.points[0]+del, Main.points[0] + del + pos3*length , new Godot.Color(0,1,1));
+        pos3 = Main.paraPro(Main.CelE.v[3].X, Main.CelE.v[3].Y, Main.CelE.v[3].Z, in s0, in s1, in c0, in c1);
+        DrawLine(Main.points[4]+del, Main.points[4] + del + pos3 , new Godot.Color(0,1,1));
 
         //draw points
         Godot.Color color;

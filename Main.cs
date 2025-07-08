@@ -6,7 +6,7 @@ using System.Numerics;
 public partial class Main : Godot.Node3D
 {
     //debugよう変数
-    public static int maxCI=1+    5  ; //ここを変更
+    public static int maxCI=1+    9  ; //ここを変更 1<= <=9
 
 
     public struct Inputs{
@@ -23,7 +23,7 @@ public partial class Main : Godot.Node3D
     }
     
    //定数 
-    public static float sensit = 1F;
+    public static float sensit = 1.3F;
     public static float CAMD = 32;
     public static double[] ts = new double[2]{1,1}; //0:rtimescale 1:vtimescale
     public static double MAXD = 4.096;
@@ -34,7 +34,7 @@ public partial class Main : Godot.Node3D
     public static float near = 10; //選択判定のしきい値
     public static int pointMinRad = 3;
     public static int config = 0; //bitwise operation なるものをしてみようと思った
-    public static int drawPoly = 1000;
+    public static int drawPoly = 50;
     //32bit 0:sync vtime with rtime 1:
 
 
@@ -43,7 +43,7 @@ public partial class Main : Godot.Node3D
     public static double VSHT = 0;
     public static double[,] positions = new double[10,3];
     public static double[,] vpositions = new double[10,3];
-    private double[] diffPos = new double[3];
+    public static double[] diffPos = new double[3];
     public static float[,] camAngl = new float[2,2]{{0,0},{0.785375F,0.785375F}};
 
     public static List<Godot.Vector2> points = new List<Godot.Vector2>();
@@ -51,11 +51,12 @@ public partial class Main : Godot.Node3D
 
     public static int selecting = 0;
     public static int viewCenter = 1;
-    public static int gravCenter = 1;
+    public static int gravCenter = 0;
     public static List<int> bSelecting = new List<int>();
     public static int hovering = -2;
     public static Quaternion posContQ;
     public static float posContT = -2; //-2は制御してないとき
+    public static bool harfC = true; //重くて重要じゃないやつを実行するときのフラグ
 
 
     //database
@@ -65,18 +66,19 @@ public partial class Main : Godot.Node3D
     public class CelE{
         public static float[] radius = {696340F , 2439.7F , 6051.8F , 6378.0F , 3389.5F , 69911F , 58232F , 25362F, 24622F , 1188.3F}; //赤道半径 km
         public static double[] grav  =   {132712440000000,22032080,324858700,398600400,042828290,126712600000,37939520000,5780159000,6871308000,1020865};// km^2 m / s^2  重力定数
+        public static Vector3[] v = new Vector3[10];
         public static Orbit[] o = new Orbit[10]{
             new Orbit(),
                 //      period        e      Laxis       epo       s0     s1 s2 sc1 sc2 ci  s1~sc2は実行時に計算して埋める period,Laxis,epoなどは調整される この数値はいとうこうやの本にのってたもの
-            new Orbit(2111.256     ,0.20563F,57909185  ,358.660F,77.462F ,0,0,1,1, 0),
-            new Orbit(5392.824     ,0.00678F,108208926 ,295.535F,131.564F,0,0,1,1, 0),
-            new Orbit(8765.812536  ,0.01672F,149597870 ,175.647F,102.950F,0,0,1,1, 0),
-            new Orbit(16487.52     ,0.09338F,227940928 ,328.285F,336.076F,0,0,1,1, 0),
-            new Orbit(103976.123686,0.04829F,778332734 ,126.078F,14.339F ,0,0,1,1, 0),
-            new Orbit(258873.378343,0.05604F,1426978478,359.712F,93.077F ,0,0,1,1, 0),
-            new Orbit(738546.091254,0.04612F,2870991216,156.021F,173.008F,0,0,1,1, 0),
-            new Orbit(1444518.24781,0.01011F,4497071892,263.861F,48.112F ,0,0,1,1, 0),
-            new Orbit(2171648.20414,0.24847F,5913523048,19.403F ,224.141F,0,0,1,1, 0)
+            new Orbit(2111.256     ,0.20563F,57909185  ,358.660F,77.462F ,0,0,0,1,1, 0),
+            new Orbit(5392.824     ,0.00678F,108208926 ,295.535F,131.564F,0,0,0,1,1, 0),
+            new Orbit(8765.812536  ,0.01672F,149597870 ,175.647F,102.950F,0,0,0,1,1, 0),
+            new Orbit(16487.52     ,0.09338F,227940928 ,328.285F,336.076F,0,0,0,1,1, 0),
+            new Orbit(103976.123686,0.04829F,778332734 ,126.078F,14.339F ,0,0,0,1,1, 0),
+            new Orbit(258873.378343,0.05604F,1426978478,359.712F,93.077F ,0,0,0,1,1, 0),
+            new Orbit(738546.091254,0.04612F,2870991216,156.021F,173.008F,0,0,0,1,1, 0),
+            new Orbit(1444518.24781,0.01011F,4497071892,263.861F,48.112F ,0,0,0,1,1, 0),
+            new Orbit(2171648.20414,0.24847F,5913523048,19.403F ,224.141F,0,0,0,1,1, 0)
         };
     }
     public class Probe{　//探査機の構造体
@@ -130,6 +132,7 @@ public partial class Main : Godot.Node3D
     public static Godot.WorldEnvironment worlEnvi;
     public static Godot.Button[] sync = new Godot.Button[4]; //checkbuttonをbuttonに格納してもうまくいくww
     public static Godot.LineEdit[] VSHTdisp = new Godot.LineEdit[5];
+    public static Godot.Button setVtime ;
 
     public override void _Ready()
     {
@@ -186,6 +189,7 @@ public partial class Main : Godot.Node3D
         VSHTdisp[2] = (Godot.LineEdit)GetNode("/root/Main/Control/HSC1/Tab/軌道設計/HSC1/TOOLP/HC/VC/HFC/time/dd");
         VSHTdisp[3] = (Godot.LineEdit)GetNode("/root/Main/Control/HSC1/Tab/軌道設計/HSC1/TOOLP/HC/VC/HFC/time/hh");
         VSHTdisp[4] = (Godot.LineEdit)GetNode("/root/Main/Control/HSC1/Tab/軌道設計/HSC1/TOOLP/HC/VC/HFC/time/mm2");
+        setVtime = (Godot.Button)GetNode("/root/Main/Control/HSC1/Tab/軌道設計/HSC1/TOOLP/HC/VC/HFC/set");
         //ui操作
         //tsN[0].Textが書きかわるのは、手入力,sync[2].Pressed、tsLockN[0].Pressed、tsValueNとtdDigiNのChanded
         //lock時に書きかえられないやうにす
@@ -202,9 +206,6 @@ public partial class Main : Godot.Node3D
         sync[2].Pressed += ()=>{
             inputToTs(MODE[0]);
         };
-        sync[2].Pressed += ()=>{
-            VSHT = RSHT;
-        };
         sync[1].Pressed += ()=>{
             if(sync[1].ButtonPressed){
                 ts[1] = ts[0];
@@ -216,6 +217,9 @@ public partial class Main : Godot.Node3D
                     RSHT = VSHT;
                 }
             }
+        };
+        setVtime.Pressed += ()=>{
+            VSHT = date2SHT(VSHTdisp[0].Text,VSHTdisp[1].Text,VSHTdisp[2].Text,VSHTdisp[3].Text,VSHTdisp[4].Text,"0");
         };
         sendBtn.Pressed += sendCmd;
         cmdBox.GrabFocus();
@@ -282,6 +286,7 @@ public partial class Main : Godot.Node3D
         Probe.reactWheel = new float[3]{0,0,0};
         Probe.solarConf = 100;
         //celEの初期化
+        CelE.v[0] = new Vector3(0,0,0);
         float[,] tmps = new float[2,10]{
             {0F,7.004F ,3.394F  ,0F      ,1.850F  ,1.307F  ,2.486F  ,0.774F  ,1.771F  ,17.150F },
             {0F,48.327F,76.670F,174.865F ,49.548F ,100.472F,113.656F,74.009F ,131.782F,110.318F}
@@ -294,15 +299,16 @@ public partial class Main : Godot.Node3D
             }else if(360 < CelE.o[i].s0){
                 CelE.o[i].s0 -= 360;
             }
-            CelE.o[i].s0 = (float)toRad((double)CelE.o[i].s0);
-            CelE.o[i].s1 = MathF.Sin((float)toRad((double)tmps[0,i]));
-            CelE.o[i].s2 = MathF.Sin((float)toRad((double)tmps[1,i]));
-            CelE.o[i].c1 = MathF.Cos((float)toRad((double)tmps[0,i]));
-            CelE.o[i].c2 = MathF.Cos((float)toRad((double)tmps[1,i]));
+            CelE.o[i].c0 = MathF.Cos(toRadF(CelE.o[i].s0));
+            CelE.o[i].s0 = MathF.Sin(toRadF(CelE.o[i].s0));
+            CelE.o[i].s1 = MathF.Sin(toRadF(tmps[0,i]));
+            CelE.o[i].s2 = MathF.Sin(toRadF(tmps[1,i]));
+            CelE.o[i].c1 = MathF.Cos(toRadF(tmps[0,i]));
+            CelE.o[i].c2 = MathF.Cos(toRadF(tmps[1,i]));
 
             Godot.GD.Print($"{CelE.o[i].s0} , {CelE.o[i].s1} , {CelE.o[i].s2} , {CelE.o[i].c1} , {CelE.o[i].c2}");
             //伊藤弘也の軌道計算の薄い本のデータベースの値を変換している
-            double GSHT = date2SHT("2003-07-01T00:00:00");
+            double GSHT = date2SHT("2003","7","1","0","0","0");
             GSHT = GSHT / (double)CelE.o[i].period;
             GSHT = GSHT % 1;
             GSHT = GSHT * 360;
@@ -316,12 +322,13 @@ public partial class Main : Godot.Node3D
             CelE.o[i].epo = toRadF(CelE.o[i].epo);
             Godot.GD.Print("aiuaiuau");
             Godot.GD.Print(CelE.o[i].epo);
-            CelE.o[i].l = CelE.o[i].l / (1+(double)CelE.o[i].e)*(1-(double)CelE.o[i].e); //Laxis |-> l
+            CelE.o[i].l = CelE.o[i].l / ((1+(double)CelE.o[i].e)*(1-(double)CelE.o[i].e)); //Laxis |-> l
         }
         //こまかい初期値
-        RSHT = date2SHT(Godot.Time.GetDatetimeStringFromSystem(true,false));
-        Godot.GD.Print(Godot.Time.GetDatetimeStringFromSystem(true,false));
+        string nowDate = Godot.Time.GetDatetimeStringFromSystem(true,false);
         //2025-03-23T02:37:40 こんな形式
+        RSHT = date2SHT(nowDate.Substring(0,4),nowDate.Substring(5,2),nowDate.Substring(8,2),nowDate.Substring(11,2),nowDate.Substring(14,2),nowDate.Substring(17,2));
+        Godot.GD.Print(nowDate);
         VSHT = RSHT;
         calOrbiterPosition(3 , RSHT , false);
         Probe.acce = new double[3]{0, 0, 0};
@@ -344,13 +351,14 @@ public partial class Main : Godot.Node3D
         positions[0,0] = positions[3,0];
         positions[0,1] = positions[3,1];//静止軌道 高度+地球の半径
         positions[0,2] = positions[3,2] + 100000;;
-        Probe.velo[0] = -positions[3,1] * 35 / 1496000000;
-        Probe.velo[1] = positions[3,0] * 35 / 1496000000;
-        //CelE.o[7].s0 = toRad(127.79317);
-        //CelE.o[7].s1 = MathF.Sin(toRad(175.1122384968547));
-        //CelE.o[7].s2 = MathF.Sin(toRad(322.27219));
-        //CelE.o[7].c1 = MathF.Cos(toRad(175.1122384968547));
-        //CelE.o[7].c2 = MathF.Cos(toRad(322.27219));
+        Probe.velo[0] = -positions[3,1] * 28 / 149600000;
+        Probe.velo[1] = positions[3,0] * 28 / 149600000;
+        //CelE.o[3].s0 = 0;
+        //CelE.o[3].s1 = 0;
+        //CelE.o[3].s2 = 0;
+        //CelE.o[3].c0 = 1;
+        //CelE.o[3].c1 = 1;
+        //CelE.o[3].c2 = 1;
         
         //double AU = 149597870;
         /*
@@ -377,6 +385,7 @@ public partial class Main : Godot.Node3D
     public override void _Input(Godot.InputEvent Event){
         if(Event is Godot.InputEventMouseButton mouseClickEvent){ //[InputEvent] is [InputEventMouseButton] [variable name] 方の一致不一致と型変換と代入と宣言を同時に行うscopeはたぶん_Inputのなか
             //click
+                Godot.GD.Print(bSelecting);
             switch(mouseClickEvent.ButtonIndex){
                 case Godot.MouseButton.Left:
                     if(Inputs.isMouseInside)
@@ -528,8 +537,8 @@ public partial class Main : Godot.Node3D
                     }
                 }else if(Inputs.MBM){
                     if(MODE[0]==1){
-                        Inputs.camDiff.X += (mouseMotionEvent.Position.X - Inputs.MMV.X);
-                        Inputs.camDiff.Y += (mouseMotionEvent.Position.Y - Inputs.MMV.Y);
+                        Inputs.camDiff.X += (mouseMotionEvent.Position.X - Inputs.MMV.X)/(Main.Inputs.scale[1]*1000000);
+                        Inputs.camDiff.Y += (mouseMotionEvent.Position.Y - Inputs.MMV.Y)/(Main.Inputs.scale[1]*1000000);
                     }
                 }else if(Inputs.MBL){
                     if(MODE[0]==1){
@@ -550,13 +559,13 @@ public partial class Main : Godot.Node3D
                     float diffX;
                     float d2 = -1;
                     for(int i=0; i<points.Count; i++){
-                        diffX = mouseMotionEvent.Position.X - points[i].X - canvas.GetGlobalPosition().X - Inputs.camDiff.X+ Main.points[Main.viewCenter].X;
+                        diffX = mouseMotionEvent.Position.X - points[i].X - canvas.GetGlobalPosition().X - Canvas.del.X;
                         if( diffX < 0 ){
                             diffX = -diffX;
                         }
                         if( diffX < near ){
                             float diffY;
-                            diffY = mouseMotionEvent.Position.Y - points[i].Y - canvas.GetGlobalPosition().Y - Inputs.camDiff.Y + Main.points[Main.viewCenter].Y;
+                            diffY = mouseMotionEvent.Position.Y - points[i].Y - canvas.GetGlobalPosition().Y - Canvas.del.Y;
                             if( diffY < 0 ){
                                 diffY = -diffY;
                             }
@@ -790,9 +799,6 @@ public partial class Main : Godot.Node3D
                         FOV = (float)toRad(double.Parse(cmd[2]));
                         camN.Fov = float.Parse(cmd[2]);
                         break;
-                    case "time":
-                        VSHT = date2SHT(cmd[2]);
-                        break;
                     default:
                         Godot.GD.Print(cmd[1].ToLower());
                         break;
@@ -825,7 +831,7 @@ public partial class Main : Godot.Node3D
             case -1:
                 //canvas.QueueRedraw();
                 orbits.Clear();
-        Main.orbits.Add(Main.solveOrbit(
+                Main.orbits.Add(Main.solveOrbit(
                     new Vector3((float)Main.Probe.velo[0],(float)Main.Probe.velo[1],(float)Main.Probe.velo[2]) , 
                     0, 
                     new Vector3((float)Main.positions[0,0],(float)Main.positions[0,1],(float)Main.positions[0,2]),
@@ -840,10 +846,17 @@ public partial class Main : Godot.Node3D
                 //viewCenterを選択に
                 if(selecting != -2)
                     viewCenter = selecting;
+                Inputs.camDiff = Main.canvas.Size/2;
                 break;
             case 1:
+                Inputs.camDiff = Main.canvas.Size/2;
+                camAngl[0,0] = 0.785375F;
+                camAngl[0,1] = 0.785375F;
+                break;
+            case 2:
                 //gravCenterを選択に
-                gravCenter = selecting;
+                if(selecting != -2)
+                    gravCenter = selecting-1;
                 break;
             case 4:
                 //probeの現在の軌道を追加
@@ -925,6 +938,7 @@ public partial class Main : Godot.Node3D
     }
     private void OnViewportSizeChanged(){
         viewPort.Size = (Godot.Vector2I)viewPortContainer.GetRect().Size;
+        Inputs.camDiff = Main.canvas.Size/2;
     }
     //slider
     public void OnSliderValueChangedr(float value){
@@ -975,161 +989,40 @@ public partial class Main : Godot.Node3D
         deltaT = deltaT * ts[0]; //s
         lightN.Transform = CelN[0].Transform;
 
-        //probeの位置計算 { x[i+1] = x[i] + v[i]Dt + a[i]Dt^2 / 2
             // km/s
-            positions[0 ,0] += Probe.velo[0] * deltaT + (Probe.acce2[0] * Math.Pow(deltaT,2) / 2000);
-            positions[0 ,1] += Probe.velo[1] * deltaT + (Probe.acce2[1] * Math.Pow(deltaT,2) / 2000);
-            positions[0 ,2] += Probe.velo[2] * deltaT + (Probe.acce2[2] * Math.Pow(deltaT,2) / 2000);
-            vpositions[0, 0] = positions[0 ,0];
-            vpositions[0, 1] = positions[0 ,1];
-            vpositions[0, 2] = positions[0 ,2];
-            Probe.aVeloQ = System.Numerics.Quaternion.CreateFromAxisAngle( Probe.aVelo.v , Probe.aVelo.s * (float)deltaT );
-            Probe.anglQ = System.Numerics.Quaternion.Concatenate( Probe.anglQ , Probe.aVeloQ );
+        int sm = (int)ts[0]/131072;
+        if(sm==0)
+            sm=1;
+        rFS = new Vector3(0,0,0); //rF合計
+        for(int s=0;s<sm;s++){
+            calProbePosition(in s, deltaT/sm);
+        }
+        if(MODE[0]==1){
+        }
+        //表示系{
+        if(harfC){
+            if(MODE[0]==1){
+                canvas.QueueRedraw();
+                string vutc = SHT2date(VSHT);
+                VSHTdisp[0].Text = vutc.Substring(0,4);
+                VSHTdisp[1].Text = vutc.Substring(4,2);
+                VSHTdisp[2].Text = vutc.Substring(7,2);
+                VSHTdisp[3].Text = vutc.Substring(9,2);
+                VSHTdisp[4].Text = vutc.Substring(11,2);
+            }
+            TEL[MODE[0]].Text = displayTEL(0);
             transform = Godot.Transform3D.Identity;
             transform.Basis.X = toGV(Vector3.Transform( new Vector3( 0 , 0 , Inputs.scale[0])  , Probe.anglQ ));
             transform.Basis.Y = toGV(Vector3.Transform( new Vector3( 0 , -Inputs.scale[0] , 0) , Probe.anglQ ));
             transform.Basis.Z = toGV(Vector3.Transform( new Vector3( Inputs.scale[0] , 0 , 0)  , Probe.anglQ ));
             Probe.node.Transform = transform;
-        // }
-            //////////////////////////
-        Probe.acce[0] = 0;
-        Probe.acce[1] = 0;
-        Probe.acce[2] = 0;
-        for(int ci=0; ci<maxCI; ci++){
-            //天体の位置の計算 {
-            if(ci == 0){// sun
-                diffPos[0] =  - Main.positions[0, 0]; //km
-                diffPos[1] =  - Main.positions[0, 1]; 
-                diffPos[2] =  - Main.positions[0, 2]; 
-            }else{
-                calOrbiterPosition(ci , RSHT , false);
-                diffPos[0] = Main.positions[ci, 0] - Main.positions[0, 0]; //km 
-                diffPos[1] = Main.positions[ci, 1] - Main.positions[0, 1]; 
-                diffPos[2] = Main.positions[ci, 2] - Main.positions[0, 2]; 
-            }
-            // } 
-
-            //重力 {
-            double d = Math.Sqrt(Math.Pow(diffPos[0], 2) + Math.Pow(diffPos[1], 2) + Math.Pow(diffPos[2], 2)); //原点（ｐｒｏｂｅ）からの距離km
-            if( CelE.radius[ci] < d ){//零除算防止
-                Probe.acce[0] += CelE.grav[ci] * (diffPos[0]) / Math.Pow(d, 3);//重力定数/きょり2条 に各成分の割合をかける
-                Probe.acce[1] += CelE.grav[ci] * (diffPos[1]) / Math.Pow(d, 3);
-                Probe.acce[2] += CelE.grav[ci] * (diffPos[2]) / Math.Pow(d, 3);
-            }else{
-                Probe.velo[0]  = 0;
-                Probe.velo[1]  = 0;
-                Probe.velo[2]  = 0;
-                //衝突中
-            }
-            if(ci==0){ //発電計算
-                d = d / 100000000;
-                Vector3 z = QVQ(Probe.anglQ, new Vector3(0,0,1));
-                Godot.GD.Print(z);
-                Vector3 p = new Vector3(-(float)positions[0,0]/100000000 , -(float)positions[0,1]/100000000 , -(float)positions[0,2]/100000000);
-                Probe.solarEnergy = Probe.solarConf * Vector3.Dot(p,z)/ MathF.Pow((float)d,3);
-                d = d*100000000;
-            }
-            //表示上の天体の位置計算 {
-            if( MODE[0] == 0 ){
-                diffPos[0] = diffPos[0] * Inputs.scale[0];
-                diffPos[1] = diffPos[1] * Inputs.scale[0];
-                diffPos[2] = diffPos[2] * Inputs.scale[0];
-                d = d * Inputs.scale[0];
-                CelCon.fixCelPosition(in ci, in diffPos, in d);
-            }else if(MODE[0] == 1){
-                //
-            }
-            // }
         }
-
-
-        if(MODE[0]==1){
-                canvas.QueueRedraw();
-        }
-        //推力{
-            Probe.aAcce.v = new Vector3(0,0,0); //合計するためにとりあえずぜろ
-            Probe.aAcce.s = 0;
-
-            Vector3 rF;
-            for(int i=0; i<Probe.thruster.Length; i++){
-                if( Probe.thruster[i].rate != 0 ){
-                    rF = Vector3.Transform( Probe.thruster[i].F , Probe.anglQ );
-                    //Godot.GD.Print(mtostring(rF));
-                    //Godot.GD.Print(rF.Z * Probe.thruster[i].rate);
-                    // m/ss
-                    Probe.acce[0] += (double)(rF.X * Probe.thruster[i].rate / Probe.mass);
-                    Probe.acce[1] += (double)(rF.Y * Probe.thruster[i].rate / Probe.mass);
-                    Probe.acce[2] += (double)(rF.Z * Probe.thruster[i].rate / Probe.mass);
-                    Probe.aAcce.v += Vector3.Transform( Vector3.Multiply(Probe.thruster[i].T , Probe.thruster[i].rate) , Probe.anglQ ); //トルクを合計する
-                }
-            }
-            Probe.aAcce.s = Probe.aAcce.v.Length();
-            if( Probe.aAcce.s == 0){ //回転なし  でも軸ひつよう
-                Probe.aAcce.v.X = 1;
-                Probe.aAcce.v.Y = 0;
-                Probe.aAcce.v.Z = 0;
-
-            }else{
-                Probe.aAcce.v = Vector3.Divide( Probe.aAcce.v , Probe.aAcce.s ); //正規化
-                //In = Ixx nx^2 + Iyy ny^2 + Izz nz^2 + 2Ixy nx ny + 2I xz nx nz + 2I yz ny nz
-                float I = (Probe.MOI[0,0] * Probe.aAcce.v.X * Probe.aAcce.v.X) + (Probe.MOI[1,1] * Probe.aAcce.v.Y * Probe.aAcce.v.Y) + (Probe.MOI[2,2] * Probe.aAcce.v.Z * Probe.aAcce.v.Z) + (2 * Probe.MOI[0,1] * Probe.aAcce.v.X * Probe.aAcce.v.Y) + (2 * Probe.MOI[0,2] * Probe.aAcce.v.X * Probe.aAcce.v.Z) + (2 * Probe.MOI[1,2] * Probe.aAcce.v.Y * Probe.aAcce.v.Z);
-                if( I==0 ){
-                    Godot.GD.Print("reijozann");
-                }else{
-                    Probe.aAcce.s = Probe.aAcce.s / I;
-                }
-            }
-        // }
-
-        //姿勢制御{
-            if(posContT > 0){
-                Probe.anglQ = System.Numerics.Quaternion.Lerp(Probe.anglQ , posContQ , 1/posContT);
-                //Quaternion a = System.Numerics.Quaternion.Concatenate( Probe.anglQ , System.Numerics.Quaternion.Conjugate(posContQ) );
-                //Probe.anglQ = QVQ(new Quaternion(a.X,a.Y,a.Z,a.W/posContT) , )
-                if(posContT<deltaT*ts[0]){
-                    Probe.anglQ =  posContQ;
-                }
-                posContT -= (float)(deltaT*ts[0]);
-            }
         //}
-
-
-
-        //速度計算{ v[i+1] = v[i] + (a[i]+a[i+1])Dt/2
-            Probe.velo[0] += (Probe.acce[0] + Probe.acce2[0]) * deltaT / 2000;
-            Probe.velo[1] += (Probe.acce[1] + Probe.acce2[1]) * deltaT / 2000;
-            Probe.velo[2] += (Probe.acce[2] + Probe.acce2[2]) * deltaT / 2000;
-            Probe.aVeloQ = System.Numerics.Quaternion.CreateFromAxisAngle( Probe.aVelo.v , Probe.aVelo.s );
-            Probe.aVeloQ = System.Numerics.Quaternion.Concatenate( Probe.aVeloQ , System.Numerics.Quaternion.CreateFromAxisAngle( Probe.aAcce.v , Probe.aAcce.s * (float)deltaT ) );
-            if( Probe.aVeloQ.W >= 1 || Probe.aVeloQ.W <= -1 ){//回転なし
-                Probe.aVelo.v.X = 1;
-                Probe.aVelo.v.Y = 0;
-                Probe.aVelo.v.Z = 0;
-                Probe.aVelo.s = 0;
-            }else{
-                Probe.aVelo.s = 2 * MathF.Acos( Probe.aVeloQ.W );
-                Probe.aVelo.v.X = Probe.aVeloQ.X / MathF.Sin(Probe.aVelo.s / 2);
-                Probe.aVelo.v.Y = Probe.aVeloQ.Y / MathF.Sin(Probe.aVelo.s / 2);
-                Probe.aVelo.v.Z = Probe.aVeloQ.Z / MathF.Sin(Probe.aVelo.s / 2);
-            }
-
-            Probe.acce2[0] = Probe.acce[0];
-            Probe.acce2[1] = Probe.acce[1];
-            Probe.acce2[2] = Probe.acce[2];
-
-        // }
-        TEL[MODE[0]].Text = displayTEL(0);
-        string vutc = SHT2date(VSHT);
-        VSHTdisp[0].Text = vutc.Substring(0,4);
-        VSHTdisp[1].Text = vutc.Substring(5,2);
-        VSHTdisp[2].Text = vutc.Substring(8,2);
-        VSHTdisp[3].Text = vutc.Substring(11,2);
-        VSHTdisp[4].Text = vutc.Substring(14,2);
-
-
-
         RSHT += deltaT / 3600; //2000標準時
+        if(sync[0].ButtonPressed)
+            VSHT = RSHT;
 
+        harfC = !harfC;
 
         //以降debugよう
         
