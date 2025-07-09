@@ -29,12 +29,12 @@ public partial class Main : Godot.Node3D
     public static double MAXD = 4.096;
     public static float FOV = (float)toRad(50); //rad
     public static float WHEEL_STEP = 0.05F;
-    public static int[] MODE = new int[2]{1,-1}; //0 cg , 1 trajectory design , 2  
-                                                //mode[0] = 1のとき，mode[2] 0 orbit by radius , 1 orbit by points , 2
+    public static int[] MODE = new int[2]{1,0}; //0 cg , 1 trajectory design , 2  
+                                                //mode[0] = 1のとき，mode[1] 0 なにもしない 1 軌道描画
     public static float near = 10; //選択判定のしきい値
     public static int pointMinRad = 3;
     public static int config = 0; //bitwise operation なるものをしてみようと思った
-    public static int drawPoly = 50;
+    public static int drawPoly = 500;
     //32bit 0:sync vtime with rtime 1:
 
 
@@ -69,16 +69,16 @@ public partial class Main : Godot.Node3D
         public static Vector3[] v = new Vector3[10];
         public static Orbit[] o = new Orbit[10]{
             new Orbit(),
-                //      period        e      Laxis       epo       s0     s1 s2 sc1 sc2 ci  s1~sc2は実行時に計算して埋める period,Laxis,epoなどは調整される この数値はいとうこうやの本にのってたもの
-            new Orbit(2111.256     ,0.20563F,57909185  ,358.660F,77.462F ,0,0,0,1,1, 0),
-            new Orbit(5392.824     ,0.00678F,108208926 ,295.535F,131.564F,0,0,0,1,1, 0),
-            new Orbit(8765.812536  ,0.01672F,149597870 ,175.647F,102.950F,0,0,0,1,1, 0),
-            new Orbit(16487.52     ,0.09338F,227940928 ,328.285F,336.076F,0,0,0,1,1, 0),
-            new Orbit(103976.123686,0.04829F,778332734 ,126.078F,14.339F ,0,0,0,1,1, 0),
-            new Orbit(258873.378343,0.05604F,1426978478,359.712F,93.077F ,0,0,0,1,1, 0),
-            new Orbit(738546.091254,0.04612F,2870991216,156.021F,173.008F,0,0,0,1,1, 0),
-            new Orbit(1444518.24781,0.01011F,4497071892,263.861F,48.112F ,0,0,0,1,1, 0),
-            new Orbit(2171648.20414,0.24847F,5913523048,19.403F ,224.141F,0,0,0,1,1, 0)
+                //      period        e      Laxis       epo       s0     s1 s2 c1 c2 ci  s1~sc2は実行時に計算して埋める period,Laxis,epoなどは調整される この数値はいとうこうやの本にのってたもの
+            new Orbit(2111.256     ,0.20563F,57909185  ,358.660F,77.462F ,0,0,0,0,1,1, 0, 0),
+            new Orbit(5392.824     ,0.00678F,108208926 ,295.535F,131.564F,0,0,0,0,1,1, 0, 0),
+            new Orbit(8765.812536  ,0.01672F,149597870 ,175.647F,102.950F,0,0,0,0,1,1, 0, 0),
+            new Orbit(16487.52     ,0.09338F,227940928 ,328.285F,336.076F,0,0,0,0,1,1, 0, 0),
+            new Orbit(103976.123686,0.04829F,778332734 ,126.078F,14.339F ,0,0,0,0,1,1, 0, 0),
+            new Orbit(258873.378343,0.05604F,1426978478,359.712F,93.077F ,0,0,0,0,1,1, 0, 0),
+            new Orbit(738546.091254,0.04612F,2870991216,156.021F,173.008F,0,0,0,0,1,1, 0, 0),
+            new Orbit(1444518.24781,0.01011F,4497071892,263.861F,48.112F ,0,0,0,0,1,1, 0, 0),
+            new Orbit(2171648.20414,0.24847F,5913523048,19.403F ,224.141F,0,0,0,0,1,1, 0, 0)
         };
     }
     public class Probe{　//探査機の構造体
@@ -293,20 +293,21 @@ public partial class Main : Godot.Node3D
             };
         for(int i=1; i<10; i++){
             
-            CelE.o[i].s0 = CelE.o[i].s0 - tmps[1,i];
-            if(CelE.o[i].s0 < 0){
-                CelE.o[i].s0 += 360;
-            }else if(360 < CelE.o[i].s0){
-                CelE.o[i].s0 -= 360;
+            CelE.o[i].om = CelE.o[i].om - tmps[1,i];
+            if(CelE.o[i].om < 0){
+                CelE.o[i].om += 360;
+            }else if(360 < CelE.o[i].om){
+                CelE.o[i].om -= 360;
             }
-            CelE.o[i].c0 = MathF.Cos(toRadF(CelE.o[i].s0));
-            CelE.o[i].s0 = MathF.Sin(toRadF(CelE.o[i].s0));
+            CelE.o[i].om = toRadF(CelE.o[i].om);
+            CelE.o[i].c0 = MathF.Cos(CelE.o[i].om);
+            CelE.o[i].s0 = MathF.Sin(CelE.o[i].om);
             CelE.o[i].s1 = MathF.Sin(toRadF(tmps[0,i]));
             CelE.o[i].s2 = MathF.Sin(toRadF(tmps[1,i]));
             CelE.o[i].c1 = MathF.Cos(toRadF(tmps[0,i]));
             CelE.o[i].c2 = MathF.Cos(toRadF(tmps[1,i]));
 
-            Godot.GD.Print($"{CelE.o[i].s0} , {CelE.o[i].s1} , {CelE.o[i].s2} , {CelE.o[i].c1} , {CelE.o[i].c2}");
+            //Godot.GD.Print($"{CelE.o[i].s0} , {CelE.o[i].s1} , {CelE.o[i].s2} , {CelE.o[i].c1} , {CelE.o[i].c2}");
             //伊藤弘也の軌道計算の薄い本のデータベースの値を変換している
             double GSHT = date2SHT("2003","7","1","0","0","0");
             GSHT = GSHT / (double)CelE.o[i].period;
@@ -326,6 +327,10 @@ public partial class Main : Godot.Node3D
         }
         //こまかい初期値
         string nowDate = Godot.Time.GetDatetimeStringFromSystem(true,false);
+        orbits.Clear();
+        orbits.Add(new Orbit());
+        orbits.Add(new Orbit());
+        Godot.GD.Print(orbits.Count);
         //2025-03-23T02:37:40 こんな形式
         RSHT = date2SHT(nowDate.Substring(0,4),nowDate.Substring(5,2),nowDate.Substring(8,2),nowDate.Substring(11,2),nowDate.Substring(14,2),nowDate.Substring(17,2));
         Godot.GD.Print(nowDate);
@@ -346,13 +351,21 @@ public partial class Main : Godot.Node3D
         camN.Fov = (float)toDeg(FOV);
         
         //debugよう
-        ButtonClicked(-1);
+        //ButtonClicked(-1);
 
         positions[0,0] = positions[3,0];
         positions[0,1] = positions[3,1];//静止軌道 高度+地球の半径
-        positions[0,2] = positions[3,2] + 100000;;
-        Probe.velo[0] = -positions[3,1] * 28 / 149600000;
-        Probe.velo[1] = positions[3,0] * 28 / 149600000;
+        positions[0,2] = positions[3,2] + 100000;
+        Probe.velo[0] = -positions[3,1] * 32 / 149600000;
+        Probe.velo[1] = positions[3,0] * 32 / 149600000;
+
+        //positions[0,0] = 100000000;
+        //positions[0,1] = 0;//静止軌道 高度+地球の半径
+        //positions[0,2] = 0;
+        //Probe.velo[0] = 0;
+        //Probe.velo[1] = 30;
+        //Probe.velo[2] = 0;
+
         //CelE.o[3].s0 = 0;
         //CelE.o[3].s1 = 0;
         //CelE.o[3].s2 = 0;
@@ -385,7 +398,6 @@ public partial class Main : Godot.Node3D
     public override void _Input(Godot.InputEvent Event){
         if(Event is Godot.InputEventMouseButton mouseClickEvent){ //[InputEvent] is [InputEventMouseButton] [variable name] 方の一致不一致と型変換と代入と宣言を同時に行うscopeはたぶん_Inputのなか
             //click
-                Godot.GD.Print(bSelecting);
             switch(mouseClickEvent.ButtonIndex){
                 case Godot.MouseButton.Left:
                     if(Inputs.isMouseInside)
@@ -393,71 +405,28 @@ public partial class Main : Godot.Node3D
                     else
                         Inputs.MBL = false;
                     if( MODE[0] == 1  && Inputs.MBL ){ //mode1のとき，ホバーしててクリックするとselectingに追加
-                        if(MODE[1] != -1 && MODE[1] <= 1){
+                        if(MODE[1] == 1){
+                            if(bSelecting.Count == 2){
+                                bSelecting.Clear();
+                                MODE[1] = 0;
+                            }
                             Godot.GD.Print("a");
                             //トグル選択j
-                            if(bSelecting.Contains(hovering)){
+                            if(bSelecting.Contains(hovering-1)){
                                 for(int i=0; i<bSelecting.Count; i++){
-                                    if(bSelecting[i] == hovering){
+                                    if(bSelecting[i] == hovering-1){
                                         bSelecting.RemoveAt(i);
                                         Godot.GD.Print("removeat "+i);
                                     }
                                 }
                             }else{
                                 //点を追加していかないといけないモード
-                                bSelecting.Add(hovering);
-                                Godot.GD.Print("add "+hovering);
+                                bSelecting.Add(hovering-1);
                             }
 
                             //点操作以外の処理
-                            if(bSelecting.Count == 3){
-                                Godot.Vector2 P2 = points[bSelecting[1]] - points[bSelecting[0]];
-                                Godot.Vector2 P3 = points[bSelecting[2]] - points[bSelecting[0]];
-                                Godot.GD.Print($"0: {points[bSelecting[0]]}");
-                                Godot.GD.Print($"1: {points[bSelecting[1]]}");
-                                Godot.GD.Print($"2: {points[bSelecting[2]]}");
-                                float m = P2.Length();
-                                Godot.GD.Print($"p3: {gtostring2(P3)}");
-                                Godot.GD.Print($"p2: {gtostring2(P2)}");
-                                P2.X = P2.X / m;
-                                P2.Y = P2.Y / m;
-                                float n = P3.Dot(P2);
-                                P2.Y = MathF.Atan2(P2.Y,P2.X); //angle
-                                //焦点の位置
-                                if( n < -m ){
-                                    P2.X = (-m-n)/(m-n); //離心率
-                                }else if( n == -m ){
-                                    P2.X = 0;
-                                }else if( -m < n && n < 0 ){
-                                    P2.X = (-n-m)/(n-m);
-                                    P2.Y -= MathF.PI;
-                                }else if( 0 <= n && n <= m ){
-                                    P2.X = 0;
-                                }else{
-                                    P2.X = 1;
-                                }
-                                P3.X = MathF.Pow(P2.X, 2);
-                                P3.Y = (m-n) * (1-P3.X) / 2;
-                                Godot.GD.Print($"m: {m}");
-                                Godot.GD.Print($"n: {n}");
-                                Godot.GD.Print($"e: {P2.X}");
-                                Godot.GD.Print($"s: {P2.Y}");
-                                Godot.GD.Print($"l: {P3.Y}");
-/*
-                                orbits.Add(new Orbit(
-                                            points[bSelecting[0]].X , 
-                                            points[bSelecting[0]].Y , 
-                                            P2.X , 
-                                            P3.Y , 
-                                            P2.Y 
-                                            ));*/
-                                bSelecting.Clear();
-                                MODE[1] = -1;
 
-                            }
-
-                        }
-                        //トグル選択
+                        } //トグル選択
                         
                         if( selecting == hovering ){
                             selecting = -2;
@@ -485,9 +454,9 @@ public partial class Main : Godot.Node3D
                     if(Inputs.isMouseInside){
                         if(MODE[0] <= 1){
                             if(mouseClickEvent.ButtonIndex == Godot.MouseButton.WheelUp)
-                                Inputs.MWV[MODE[0]] += WHEEL_STEP;
+                                Inputs.MWV[MODE[0]] += 1.5F*WHEEL_STEP;
                             else
-                                Inputs.MWV[MODE[0]] -= WHEEL_STEP;
+                                Inputs.MWV[MODE[0]] -= 1.5F*WHEEL_STEP;
                             Inputs.scale[MODE[0]] = MathF.Pow(2 , Main.Inputs.MWV[MODE[0]]);
                             Inputs.scale[1] /= 1000000F;
                         }
@@ -707,7 +676,6 @@ public partial class Main : Godot.Node3D
                     if(float.TryParse(sensitN[1].Text, out sensit)){
                         sensitN[0].Text = sensitN[1].Text;
                     }
-                    Godot.GD.Print(sensit);
                 }
                 }
             }
@@ -855,11 +823,16 @@ public partial class Main : Godot.Node3D
                 break;
             case 2:
                 //gravCenterを選択に
-                if(selecting != -2)
+                if(selecting != -2 && selecting != 0)
                     gravCenter = selecting-1;
                 break;
             case 4:
                 //probeの現在の軌道を追加
+                if(MODE[1]==1){
+                    MODE[1] = 0;
+                }else{
+                    MODE[1] = 1;
+                }
                 break;
         }
     }

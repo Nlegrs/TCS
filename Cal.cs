@@ -159,14 +159,6 @@ public partial class Main
             CelE.v[ci].Z = c * Main.CelE.o[ci].s1;
             CelE.v[ci] = CelE.v[ci] * ((float)CelE.grav[0]/((float)CelE.o[ci].l*1000)); //1000は単位あわせ これはvis-vivaから
             CelE.v[ci] = CelE.v[ci] * (MathF.Sqrt(CelE.v[ci].Length())/CelE.v[ci].Length());
-            if(ci==3){
-                //Godot.GD.Print($" cosf : {f}  b : {b}  c : {c} ");
-                //Godot.GD.Print(CelE.v[ci].Length());
-                //Godot.GD.Print(1+CelE.o[ci].e*CelE.o[ci].e + 2*CelE.o[ci].e*f);
-                //Godot.GD.Print((float)CelE.o[ci].l);
-                //Godot.GD.Print(((float)CelE.grav[0]/((float)CelE.o[ci].l)));
-
-            }
 
             
 
@@ -174,10 +166,12 @@ public partial class Main
             E = Main.CelE.o[ci].l / (1 + Main.CelE.o[ci].e * f);
 
             //ここでf = cosf
+            CelE.o[ci].f = MathF.Acos((float)f);
             tmp = Math.Sqrt(1 - Math.Pow(f,2));
             //fはcosなので半分越えてたら反転
             if( M > Math.PI){
                 tmp = -tmp;
+                CelE.o[ci].f = MathF.PI - CelE.o[ci].f;
             }
             M   = E * (f*CelE.o[ci].c0 - tmp*CelE.o[ci].s0);
             tmp = E * (f*CelE.o[ci].s0 + tmp*CelE.o[ci].c0);
@@ -253,7 +247,7 @@ public partial class Main
 
         }else{
             ///f=pi/2 , 3pi/2
-
+Godot.GD.Print("aaaaaa");
             som = MathF.Atan2(-rr.X , rr.Y);
             if( Vector2.Dot(rr,vv) > 0 ){ //とおざかっているときは逆がわ
                 som += MathF.PI;
@@ -261,6 +255,7 @@ public partial class Main
         }
             o.c0 = MathF.Cos(som); //rad
             o.s0 = MathF.Sin(som); //rad
+            o.om = som; //rad
         return o;
     }
     public static String SHT2date(double t){
@@ -533,26 +528,31 @@ public partial class Main
         public double l  = 10000;//軌道長半径
         public float  epo    = 0    ;//SHT0でのM
 
+        public float om = 0; //近日点黄経rad
         //0文字目がsin,cos 1文字目が，1：軌道傾斜角 2：昇交点赤経
-        public float s0 = 0; //近日点黄経rad
+        public float s0 = 0; 
         public float s1 = 0;
         public float s2 = 0;
-        public float c0 = 1; //近日点黄経rad
+        public float c0 = 1; //近日点黄経cos
         public float c1 = 1;
         public float c2 = 1;
 
+        public float f = 0;
+
         public int ci = 0; //主星
-        public Orbit(double p, float e, double l, float epo, float s0, float c0, float s1, float s2, float c1, float c2, int ci){
+        public Orbit(double p, float e, double l, float epo, float om, float s0, float c0, float s1, float s2, float c1, float c2, float f,int ci){
             period = p;
             this.e = e;
             this.l = l;
             this.epo = epo;
+            this.om = om;
             this.s0 = s0;
             this.s1 = s1;
             this.s2 = s2;
             this.c0 = c0;
             this.c1 = c1;
             this.c2 = c2;
+            this.f = f;
             this.ci = ci;
         }
         public Orbit(){
@@ -566,6 +566,7 @@ public partial class Main
             c0 = 1;
             c1 = 1;
             c2 = 1;
+            f = 0;
             ci = 0;
         }
     }
